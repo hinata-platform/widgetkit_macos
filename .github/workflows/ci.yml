@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_VERSION: 3.47.5
+
+jobs:
+  dart:
+    name: analyze & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib test example/lib example/integration_test
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter pub publish --dry-run
+
+  macos:
+    name: example builds with its widget extension
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          channel: stable
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+      - run: flutter config --enable-swift-package-manager
+      - name: Build the example
+        working-directory: example
+        # The App Group needs a team's profile; CI has none and builds unsigned.
+        env:
+          FLUTTER_XCODE_CODE_SIGNING_ALLOWED: 'NO'
+        run: |
+          flutter pub get
+          flutter build macos --debug
+      - name: The plugin resolved through Swift Package Manager
+        working-directory: example
+        run: grep -q widgetkit_macos macos/Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage/Package.swift
+      - name: The widget extension is embedded
+        working-directory: example
+        run: test -d build/macos/Build/Products/Debug/widgetkit_macos_example.app/Contents/PlugIns/ExampleWidgets.appex
