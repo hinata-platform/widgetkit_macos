@@ -67,10 +67,15 @@ class WidgetKitMacos {
   final MethodChannel _channel;
   final bool _isMacOS;
 
+  /// The platform's answer to [isSupported], asked once.
+  Future<bool>? _supported;
+
   /// Whether WidgetKit is there: macOS 11 or later.
-  Future<bool> isSupported() async {
-    if (!_isMacOS) return false;
-    return await _channel.invokeMethod<bool>('isSupported') ?? false;
+  Future<bool> isSupported() {
+    if (!_isMacOS) return Future.value(false);
+    return _supported ??= _channel
+        .invokeMethod<bool>('isSupported')
+        .then((supported) => supported ?? false);
   }
 
   /// Stores [value] under [key] in the App Group's `UserDefaults`.
@@ -115,7 +120,7 @@ class WidgetKitMacos {
   }
 
   Future<T?> _invoke<T>(String method, [Map<String, Object?>? args]) async {
-    if (!_isMacOS) return null;
+    if (!await isSupported()) return null;
     return _channel.invokeMethod<T>(method, {'appGroup': appGroup, ...?args});
   }
 }

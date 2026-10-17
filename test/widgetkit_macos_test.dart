@@ -8,12 +8,16 @@ void main() {
   const channel = MethodChannel('widgetkit_macos');
   final calls = <MethodCall>[];
   Object? Function(MethodCall call) answer = (_) => null;
+  bool? supported = true;
 
   setUp(() {
     calls.clear();
     answer = (_) => null;
+    // macOS 11 or later unless a test says otherwise.
+    supported = true;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async {
+          if (call.method == 'isSupported') return supported;
           calls.add(call);
           return answer(call);
         });
@@ -96,10 +100,14 @@ void main() {
     expect(calls, isEmpty);
   });
 
-  test('isSupported asks the platform on macOS', () async {
-    answer = (_) => true;
+  test('below macOS 11 every call is a no-op, as off macOS', () async {
+    supported = false;
+    final old = kit();
 
-    expect(await kit().isSupported(), isTrue);
-    expect(calls.single.method, 'isSupported');
+    expect(await old.isSupported(), isFalse);
+    await old.saveWidgetData('record', 'value');
+    await old.reloadTimelines('TimerWidget');
+    expect(await old.currentConfigurations(), isEmpty);
+    expect(calls, isEmpty);
   });
 }

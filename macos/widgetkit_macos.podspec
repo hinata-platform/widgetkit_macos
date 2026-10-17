@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'widgetkit_macos'
-  s.version          = '0.1.0'
+  s.version          = '0.1.1'
   s.summary          = 'WidgetKit for Flutter on macOS.'
   s.description      = <<-DESC
 Share data with a macOS widget extension through an App Group and reload its

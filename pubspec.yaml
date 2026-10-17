@@ -1,6 +1,6 @@
 name: widgetkit_macos
 description: "WidgetKit for Flutter on macOS: share data with a widget extension through an App Group and reload its timelines."
-version: 0.1.0
+version: 0.1.1
 homepage: https://github.com/hinata-platform/widgetkit_macos
 repository: https://github.com/hinata-platform/widgetkit_macos
 issue_tracker: https://github.com/hinata-platform/widgetkit_macos/issues

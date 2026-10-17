@@ -24,11 +24,18 @@ public final class WidgetkitMacosPlugin: NSObject, FlutterPlugin {
     switch call.method {
     case "saveWidgetData":
       guard let defaults = Self.defaults(args, result), let key = args["key"] as? String else { return }
-      // Never store NSNull: UserDefaults throws on it. Null removes the key.
-      if let value = args["value"], !(value is NSNull) {
-        defaults.set(value, forKey: key)
-      } else {
+      // Null removes the key. Only plist scalars are stored: UserDefaults
+      // throws on NSNull, and on anything nested that could carry one.
+      switch args["value"] {
+      case nil, is NSNull:
         defaults.removeObject(forKey: key)
+      case let value as String:
+        defaults.set(value, forKey: key)
+      case let value as NSNumber:
+        defaults.set(value, forKey: key)
+      default:
+        result(FlutterError(code: "bad-args", message: "value must be a scalar", details: nil))
+        return
       }
       result(nil)
     case "getWidgetData":

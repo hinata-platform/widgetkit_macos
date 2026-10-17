@@ -1,30 +1,37 @@
-import Cocoa
 import FlutterMacOS
 import XCTest
 
-// If your plugin has been explicitly set to "type: .dynamic" in the Package.swift,
-// you will need to add your plugin as a dependency of RunnerTests within Xcode.
-
 @testable import widgetkit_macos
 
-// This demonstrates a simple unit test of the Swift portion of this plugin's implementation.
-//
-// See https://developer.apple.com/documentation/xctest for more information about using XCTest.
-
+/// The native half: what reaches UserDefaults and what is refused.
 class RunnerTests: XCTestCase {
+  private let group = "widgetkit_macos.tests"
 
-  func testGetPlatformVersion() {
-    let plugin = WidgetkitMacosPlugin()
-
-    let call = FlutterMethodCall(methodName: "getPlatformVersion", arguments: [])
-
-    let resultExpectation = expectation(description: "result block must be called.")
-    plugin.handle(call) { result in
-      XCTAssertEqual(result as! String,
-                     "macOS " + ProcessInfo.processInfo.operatingSystemVersionString)
-      resultExpectation.fulfill()
+  private func call(_ method: String, _ arguments: [String: Any]) -> Any? {
+    var answer: Any?
+    let done = expectation(description: method)
+    WidgetkitMacosPlugin().handle(FlutterMethodCall(methodName: method, arguments: arguments)) {
+      answer = $0
+      done.fulfill()
     }
     waitForExpectations(timeout: 1)
+    return answer
   }
 
+  func testNullRemovesTheKey() {
+    XCTAssertNil(call("saveWidgetData", ["appGroup": group, "key": "k", "value": "v"]))
+    XCTAssertEqual(call("getWidgetData", ["appGroup": group, "key": "k"]) as? String, "v")
+    XCTAssertNil(call("saveWidgetData", ["appGroup": group, "key": "k", "value": NSNull()]))
+    XCTAssertNil(call("getWidgetData", ["appGroup": group, "key": "k"]))
+  }
+
+  func testNestedValuesAreRefused() {
+    let answer = call("saveWidgetData", ["appGroup": group, "key": "k", "value": [NSNull()]])
+    XCTAssertEqual((answer as? FlutterError)?.code, "bad-args")
+  }
+
+  func testReloadWithoutKindIsRefused() {
+    let answer = call("reloadTimelines", ["appGroup": group])
+    XCTAssertEqual((answer as? FlutterError)?.code, "bad-args")
+  }
 }
