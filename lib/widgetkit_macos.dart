@@ -73,9 +73,12 @@ class WidgetKitMacos {
   /// Whether WidgetKit is there: macOS 11 or later.
   Future<bool> isSupported() {
     if (!_isMacOS) return Future.value(false);
+    // A platform that cannot answer (no plugin registered, an engine without
+    // it) counts as unsupported, once, rather than failing every later call.
     return _supported ??= _channel
         .invokeMethod<bool>('isSupported')
-        .then((supported) => supported ?? false);
+        .then((supported) => supported ?? false)
+        .catchError((Object _) => false);
   }
 
   /// Stores [value] under [key] in the App Group's `UserDefaults`.

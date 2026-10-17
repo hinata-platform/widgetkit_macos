@@ -100,6 +100,15 @@ void main() {
     expect(calls, isEmpty);
   });
 
+  test('a platform that cannot answer counts as unsupported', () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, null);
+    final lost = kit();
+
+    expect(await lost.isSupported(), isFalse);
+    await lost.saveWidgetData('record', 'value');
+  });
+
   test('below macOS 11 every call is a no-op, as off macOS', () async {
     supported = false;
     final old = kit();

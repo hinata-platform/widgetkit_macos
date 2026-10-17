@@ -1,3 +1,8 @@
+## 0.1.2
+
+- A platform that cannot answer `isSupported` (no plugin registered) counts
+  as unsupported once, instead of failing every later call.
+
 ## 0.1.1
 
 - Below macOS 11 every call is the no-op the documentation promised, instead
